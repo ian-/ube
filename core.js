@@ -10,7 +10,7 @@
   //shorthand for ube.load(), and automatically replaces elements
   var ube = function(pointer, callback) {
     return ube.load(pointer, function() {
-      callback && callback.call(this);
+      callback && (callback.length) ? callback(this) : callback.call(this);
       if(pointer instanceof HTMLElement || pointer.parentElement)
         pointer.parentElement.replaceChild(this.canvas, pointer);
     });
@@ -60,12 +60,11 @@
     //load url, canvas, ube Image, or array into ube Image object(s)
     load: function(pointer, callback) {
       var image = new Image();
-      if(typeof pointer === 'string') {
+      if(typeof pointer === 'string')
         toImage(pointer, function(img) {
           image.canvas = toCanvas(img);
           callback && callback.call(image, image);
         });
-      }
       else if(pointer.src)
         image.canvas = toCanvas(pointer);
       else if(pointer.getContext)
@@ -73,7 +72,7 @@
       else if(pointer.length)
         for(var i=0, image=[]; i<pointer.length; i++)
           image[i] = this.load(pointer[i], callback);
-      if(!pointer.length && typeof pointer != 'string' && callback)
+      if(!pointer.length && typeof pointer !== 'string' && callback)
         callback.call(image, image);
       return image;
     },
@@ -128,7 +127,7 @@
     },
 
     copyImageData: function(imageData) {
-      return ube.load(createCanvas(imageData.width, imageData.height), function(image) {
+       return ube.load(createCanvas(imageData.width, imageData.height), function(image) {
         image.putImageData(imageData);
       }).getImageData();
       //var canvas = createCanvas(imageData.width, imageData.height), ctx = canvas.getContext('2d');
@@ -171,16 +170,9 @@
 
     //apply native drawing operations
     draw: function(pointer) {
-      if(typeof pointer === 'function')
-        pointer.call(this.ctx());
-      else {
-        var ctx = this.ctx();
-        for(operation in pointer)
-          if(typeof ctx[operation] === 'function')
-            ctx[operation].apply(ctx, operations[operation]);
-          else
-            ctx[operation] = operations[operation];
-      }
+      //draw(arg) -> arg = this.ctx(), draw() -> this = this.ctx()
+      (pointer.length) ? pointer(this.ctx()) : pointer.call(this.ctx());
+      this.cacheImageData(false); // clear cache
       return this;
     },
 
@@ -195,7 +187,7 @@
     },
 
     //optimized version of previous applyCustom
-    applyCustom: function(pointer, antialias) {
+    applyCustom: function(pointer) {
       //create canvas, draw 'pointer', get imageData
       var canvas = createCanvas(this.width(), this.height()),
           drawImage = ube.load(canvas, function(image) {
@@ -232,10 +224,10 @@
           procData = procImageData.data;
       //apply effects to region
       for(var i=0, len=origData.length; i<len; i+=4) {
-        if(drawData[i+3] != 0) {
-          var amount = (antialias) ? (drawData[i+3] / 255) : .5;
+        if(drawData[i+3] !== 0) {
+          var amount = drawData[i+3] / 255;
           for(var j=0; j<4; j++)
-              origData[i+j] = (antialias) ? ((procData[i+j] * amount) + (origData[i+j] * (1 - amount))) : procData[i+j];
+              origData[i+j] = (procData[i+j] * amount) + (origData[i+j] * (1 - amount))
         }
       }
       //reattach data, paint back pixels
