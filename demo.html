@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>image processing library</title>
+  </head>
+  <body>
+    <img id="image" src="test.jpg" />
+    <img id="image" src="test.jpg" />
+    <pre id="text">
+<span style='color:#800000; font-weight:bold; '>var</span> image <span style='color:#808030; '>=</span> ube<span style='color:#808030; '>(</span>document<span style='color:#808030; '>.</span>images<span style='color:#808030; '>[</span><span style='color:#008c00; '>1</span><span style='color:#808030; '>]</span><span style='color:#808030; '>,</span> <span style='color:#800000; font-weight:bold; '>function</span><span style='color:#808030; '>(</span><span style='color:#808030; '>)</span> <span style='color:#800080; '>{</span>
+  <span style='color:#800000; font-weight:bold; '>this</span><span style='color:#808030; '>.</span>darken<span style='color:#808030; '>(</span><span style='color:#008c00; '>50</span><span style='color:#808030; '>)</span><span style='color:#808030; '>.</span>rgba<span style='color:#808030; '>(</span><span style='color:#008c00; '>20</span><span style='color:#808030; '>)</span><span style='color:#808030; '>.</span>apply<span style='color:#808030; '>(</span><span style='color:#808030; '>)</span><span style='color:#800080; '>;</span>
+  <span style='color:#800000; font-weight:bold; '>this</span><span style='color:#808030; '>.</span>monochrome<span style='color:#808030; '>(</span><span style='color:#008c00; '>4</span><span style='color:#808030; '>)</span><span style='color:#808030; '>.</span>applyRect<span style='color:#808030; '>(</span><span style='color:#008c00; '>490</span><span style='color:#808030; '>,</span> <span style='color:#008c00; '>290</span><span style='color:#808030; '>,</span> <span style='color:#008c00; '>100</span><span style='color:#808030; '>,</span> <span style='color:#008c00; '>100</span><span style='color:#808030; '>)</span><span style='color:#800080; '>;</span>
+  <span style='color:#800000; font-weight:bold; '>this</span><span style='color:#808030; '>.</span>draw<span style='color:#808030; '>(</span><span style='color:#800000; font-weight:bold; '>function</span><span style='color:#808030; '>(</span><span style='color:#808030; '>)</span> <span style='color:#800080; '>{</span>
+    <span style='color:#800000; font-weight:bold; '>this</span><span style='color:#808030; '>.</span>fillRect<span style='color:#808030; '>(</span><span style='color:#008c00; '>10</span><span style='color:#808030; '>,</span> <span style='color:#008c00; '>10</span><span style='color:#808030; '>,</span> <span style='color:#008c00; '>100</span><span style='color:#808030; '>,</span> <span style='color:#008c00; '>100</span><span style='color:#808030; '>)</span><span style='color:#800080; '>;</span>
+  <span style='color:#800080; '>}</span><span style='color:#808030; '>)</span><span style='color:#800080; '>;</span>
+  <span style='color:#800000; font-weight:bold; '>this</span><span style='color:#808030; '>.</span>invert<span style='color:#808030; '>(</span><span style='color:#808030; '>)</span><span style='color:#808030; '>.</span>applyCustom<span style='color:#808030; '>(</span><span style='color:#800000; font-weight:bold; '>function</span><span style='color:#808030; '>(</span><span style='color:#808030; '>)</span> <span style='color:#800080; '>{</span>
+    <span style='color:#800000; font-weight:bold; '>this</span><span style='color:#808030; '>.</span>font <span style='color:#808030; '>=</span> <span style='color:#0000e6; '>'150px sans-serif'</span><span style='color:#800080; '>;</span>
+    <span style='color:#800000; font-weight:bold; '>this</span><span style='color:#808030; '>.</span>fillText<span style='color:#808030; '>(</span><span style='color:#0000e6; '>'yay text!'</span><span style='color:#808030; '>,</span> <span style='color:#008c00; '>25</span><span style='color:#808030; '>,</span> <span style='color:#008c00; '>250</span><span style='color:#808030; '>)</span><span style='color:#800080; '>;</span>
+  <span style='color:#800080; '>}</span><span style='color:#808030; '>,</span> <span style='color:#0f4d75; '>true</span><span style='color:#808030; '>)</span><span style='color:#800080; '>;</span>
+<span style='color:#800080; '>}</span><span style='color:#808030; '>)</span><span style='color:#800080; '>;</span>
+
+</pre>
+    <script type="text/javascript" src="core.js"></script>
+    <script type="text/javascript" src="plugins.js"></script>
+    <script type="text/javascript">
+    window.onload = function() {
+      var image = ube(document.images[1], function() {
+        /* ~~~~~ */ var startDate = new Date();
+        this.darken(50).rgba(20).apply();
+        this.monochrome(4).applyRect(490, 290, 100, 100);
+        this.draw(function() {
+          this.fillRect(10, 10, 100, 100);
+        });
+        this.invert().applyCustom(function() {
+          this.font = '150px sans-serif';
+          this.fillText('yay text!', 25, 250);
+        }, true);
+        /* ~~~~~ */ document.getElementById('text').innerHTML += '<b>Total execution time: ' + (new Date() - startDate) + 'ms (Refresh)</b>';
+      });
+    };
+    </script>
+  </body>
+</html>
+
+<!-- please excuse my sloppy html -->
