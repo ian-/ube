@@ -128,10 +128,9 @@
     },
 
     copyImageData: function(imageData) {
-      var image = ube.load(createCanvas(imageData.width, imageData.height), function(image) {
+      return ube.load(createCanvas(imageData.width, imageData.height), function(image) {
         image.putImageData(imageData);
-      });
-      return image.getImageData();
+      }).getImageData();
       //var canvas = createCanvas(imageData.width, imageData.height), ctx = canvas.getContext('2d');
       //ctx.putImageData(imageData, 0, 0);
       //return ctx.getImageData(0, 0, canvas.width, canvas.height);
