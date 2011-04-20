@@ -42,7 +42,7 @@ ube.addFilters({
   },
 
   monochrome: function(data, param) {
-    var bits = (Math.pow(2, param[0]) - 1), x = Math.round(255 / bits);
+    var bits = Math.pow(2, param[0]) - 1, x = Math.round(255 / bits);
     for(var i = 0, len = data.length; i < len; i+=4) {
       var sum = (data[i] + data[i+1] + data[i+2]) / 3;
       data[i] = data[i+1] = data[i+2] = Math.round(sum / x) * x;
@@ -104,13 +104,10 @@ ube.addFilters({
     }
   },
 
-  crop: function(data, coords, imageData, image) {
-    imageData.data = data;
-    image.putImageData(imageData);
-    var imageData = image.getImageData.apply(image, coords);
-    image.canvas.width = coords[2];
-    image.canvas.height = coords[3];
-    return imageData;
-  },
-
+  opacity: function(data, arg) {
+    var amount = arg[0];
+    if(amount < 1)
+      for(var i=3, len=data.length; i<len; i++)
+        data[i] *= amount;
+  }
 });
