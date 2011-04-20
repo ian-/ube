@@ -9,8 +9,8 @@
 
   //shorthand for ube.load(), and automatically replaces elements
   var ube = function(pointer, callback) {
-    return ube.load(pointer, function() {
-      callback && (callback.length) ? callback(this) : callback.call(this);
+    return (!pointer) ? ube : ube.load(pointer, function() {
+      callFunction(callback, this);
       if(pointer instanceof HTMLElement || pointer.parentElement)
         pointer.parentElement.replaceChild(this.canvas, pointer);
     });
@@ -18,14 +18,18 @@
 
   //Image object, holds canvas element
   var Image = function() {
-    this.backref = ube;
+    extend(this, {
+      backref: ube,
+      renderQueue: []
+    });
   };
 
   //add properties onto objects
-  //allows for some nice minification
-  var extend = function(object, properties) {
-    for(property in properties)
-      object[property] = properties[property];
+  //allows for some nice expressiveness and minification
+  var extend = function(object) {
+    for(var i=1; i<arguments.length; i++)
+      for(property in arguments[i])
+        object[property] = arguments[i][property];
     return object;
   };
 
@@ -54,32 +58,42 @@
     });
   };
 
+  //call a function, conditionally overriding 'this'
+  var callFunction = function(func, param) {
+    return (func.length) ? func(param) : func.call(param);
+  };
+
   //define exposed ube methods
   extend(ube, {
 
     //load url, canvas, ube Image, or array into ube Image object(s)
     load: function(pointer, callback) {
       var image = new Image();
-      if(typeof pointer === 'string')
+      if(typeof pointer === 'string')     //url
         toImage(pointer, function(img) {
           image.canvas = toCanvas(img);
-          callback && callback.call(image, image);
+          callFunction(callback, image);
         });
-      else if(pointer.src)
+      else if(pointer.src)                //image
         image.canvas = toCanvas(pointer);
-      else if(pointer.getContext)
+      else if(pointer.data) {             //imageData
+        image.canvas = createCanvas(pointer.width, pointer.height);
+        image.putImageData(pointer);
+      }
+      else if(pointer.getContext)         //canvas
         image.canvas = pointer;
-      else if(pointer.length)
+      else if(pointer.length)             //array
         for(var i=0, image=[]; i<pointer.length; i++)
           image[i] = this.load(pointer[i], callback);
       if(!pointer.length && typeof pointer !== 'string' && callback)
-        callback.call(image, image);
+        callFunction(callback, image);
       return image;
     },
 
     filters: {},
+    blenders: {},
 
-    //add filter function to ube.filters and Image prototype
+    //add filter functions to ube.filters and Image & Layer prototypes
     addFilters: function(filters) {
       for(filter in filters) {
         this.filters[filter] = filters[filter];
@@ -93,6 +107,11 @@
       }
     },
 
+    //add blender functions to ube.blenders
+    addBlenders: function(blenders) {
+      extend(this.blenders, blenders);
+    },
+
     //give ube back to window, return ube
     noConflict: function() {
       window.ube = _ube;
@@ -100,7 +119,7 @@
     },
 
     //ube project info
-    version: '1.0'
+    version: '1.1'
   });
 
   //define Image.prototype methods
@@ -118,36 +137,39 @@
     getImageData: function(x, y, width, height) {
       if(arguments.length === 0 && this.cachedImageData)
         return this.cachedImageData;
-      else
-        return this.ctx().getImageData( x || 0, y || 0, width || this.width(), height || this.height());
+      var imageData = this.ctx().getImageData( x || 0, y || 0, width || this.width(), height || this.height());
+      if(arguments.length === 0)
+        this.cacheImageData(imageData);
+      return imageData;
     },
 
     putImageData: function(imageData, x, y) {
-      return this.ctx().putImageData(imageData, x || 0, y || 0);
+      var imageData = this.ctx().putImageData(imageData, x || 0, y || 0);
+      if(arguments.length === 0)
+        this.cacheImageData(imageData);
+      return imageData;
     },
 
     copyImageData: function(imageData) {
+      imageData = imageData || this.getImageData();
        return ube.load(createCanvas(imageData.width, imageData.height), function(image) {
         image.putImageData(imageData);
       }).getImageData();
-      //var canvas = createCanvas(imageData.width, imageData.height), ctx = canvas.getContext('2d');
-      //ctx.putImageData(imageData, 0, 0);
-      //return ctx.getImageData(0, 0, canvas.width, canvas.height);
     },
 
     cacheImageData: function(imageData) {
       this.cachedImageData = imageData;
     },
 
-    //[ ['name', [arguments]], ['name, [arguments]] ]
-    processImageData: function(imageData, filters) {
+    // apply filters in filterqueue on imageData
+    filterImageData: function(imageData, filters) {
       var data = imageData.data;
       for(var i=0; i<filters.length; i++) {
         var filterName = filters[i][0],
-            filterPrms = filters[i][1];
+            filterArgs = filters[i][1];
         if(ube.filters[filterName]) {
           //filter(data, [params], imageData, Image)
-          value = ube.filters[filterName](data, filterPrms, imageData, this);
+          value = ube.filters[filterName](data, filterArgs, imageData, this);
           value && (imageData = value, data = imageData.data);
         }
       }
@@ -155,15 +177,22 @@
       return imageData;
     },
 
-    //Image.filter() -> renderQueue
-    renderQueue: [],
+    // blend layers together
+    blendImageData: function(imageData1, imageData2, options) {
+      var blender = options.blendmode;
+      var data1 = imageData1.data;
+      var data2 = imageData2.data;
+      if(ube.blenders[blender])
+        data = ube.blenders[blender](data1, data2);
+      imageData1.data = data1;
+      return imageData1;
+    },
 
     //apply filters in renderQueue [[ image.grayscale().rgba(100).apply(); ]]
     apply: function() {
       var imageData = this.getImageData();
-      imageData = this.processImageData(imageData, this.renderQueue);
+      imageData = this.filterImageData(imageData, this.renderQueue);
       this.putImageData(imageData);
-      this.cacheImageData(imageData);
       this.renderQueue = [];
       return this;
     },
@@ -171,17 +200,17 @@
     //apply native drawing operations
     draw: function(pointer) {
       //draw(arg) -> arg = this.ctx(), draw() -> this = this.ctx()
-      (pointer.length) ? pointer(this.ctx()) : pointer.call(this.ctx());
-      this.cacheImageData(false); // clear cache
+      callFunction(pointer, this.ctx());
+      this.cacheImageData(); // clear cache
       return this;
     },
 
     //apply filters to specified rectangular area
     applyRect: function(x, y, width, height) {
       var imageData = this.getImageData(x, y, width, height);
-      imageData = this.processImageData(imageData, this.renderQueue);
+      imageData = this.filterImageData(imageData, this.renderQueue);
       this.putImageData(imageData, x, y);
-      this.cacheImageData(false); // clear cache
+      this.cacheImageData(); // clear cache
       this.renderQueue = [];
       return this;
     },
@@ -196,8 +225,7 @@
           drawImageData = drawImage.getImageData(),
           drawData = drawImageData.data;
       //loop through imageData to get rectangular dimensions
-      var dimensions = []; // [x1, y1, x2, y2]
-      for(var i=0, len=drawData.length; i<len; i+=4) {
+      for(var i=0, dimensions = [], len=drawData.length; i<len; i+=4) {
         if(drawData[i+3] > 0) {
           var x = (i / 4) % drawImageData.width,
               y = Math.floor(i / (drawImageData.width * 4));
@@ -211,14 +239,13 @@
             dimensions[3] = y;
         }
       }
-      //do a little cleanup
       dimensions[2] -= dimensions[0] - 1;
       dimensions[3] -= dimensions[1] - 1;
       //get imagedatas
       var drawImageData = drawImage.getImageData.apply(drawImage, dimensions),
           origImageData = this.getImageData.apply(this, dimensions),
           copyImageData = this.copyImageData(origImageData),
-          procImageData = this.processImageData(copyImageData, this.renderQueue),
+          procImageData = this.filterImageData(copyImageData, this.renderQueue),
           drawData = drawImageData.data,
           origData = origImageData.data,
           procData = procImageData.data;
@@ -237,7 +264,23 @@
       this.renderQueue = [];
       return this;
     },
-      
+
+    layer: function(options, callback) {
+      options = extend({
+        blendmode: 'normal',
+        opacity: 1
+      }, options);
+      this.apply();
+      var imageData = (options.copyparent) ? this.copyImageData() : this.createImageData();
+      var layer = ube.load(imageData);
+      callFunction(callback, layer);
+      if(options.opacity < 1)
+        layer.opacity(options.opacity);
+      layer.apply();
+      var imageData = this.blendImageData(this.getImageData(), layer.getImageData(), options);
+      this.putImageData(imageData);
+      return this;
+    },
 
   });
 
