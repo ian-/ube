@@ -1,27 +1,34 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>image processing library</title>
-  </head>
-  <body>
-    <img id="image" src="test.jpg" />
-    <img id="image" src="test.jpg" />
-    <pre id="text"></pre>
-    <script type="text/javascript" src="core.js"></script>
-    <script type="text/javascript" src="filters.js"></script>
-    <script type="text/javascript" src="blenders.js"></script>
-    <script type="text/javascript">
-    window.onload = function() {
-console.time(1);
-      ube(document.images[0], function() {
-        this.layer({opacity: .5, copyparent: true, blendmode: 'screen'}, function() {
-          this.rgba(100).applyRect(0, 0, 100, 100);
-        });
-      });
-console.timeEnd(1);
-    };
-    </script>
-  </body>
-</html>
 
-<!-- please excuse my sloppy html -->
+<!DOCTYPE html> 
+<html> 
+  <head> 
+    <title>image processing library</title> 
+  </head> 
+  <body> 
+    <img id="image" src="test.jpg" /> 
+    <img id="image" src="test.jpg" /> 
+    <pre id="text"></pre> 
+    <script type="text/javascript" src="core.js"></script> 
+    <script type="text/javascript" src="filters.js"></script> 
+    <script type="text/javascript"> 
+    window.onload = function() {
+      var image = ube(document.images[1], function() {
+        /* ~~~~~ */ var startDate = new Date();
+        this.darken(50).rgba(20).apply()
+            .monochrome(4).applyRect(490, 290, 100, 100)
+            .draw(function() {
+              this.strokeStyle = 'red',
+              this.strokeRect(10, 10, 100, 100);
+            })
+            .invert().applyCustom(function() {
+              this.font = '150px sans-serif';
+              this.fillText('yay text!', 25, 250);
+            });
+        /* ~~~~~ */ document.getElementById('text').innerHTML += '<b>Total execution time: ' + (new Date() - startDate) + 'ms (Refresh)</b>';
+      });
+    };
+    </script> 
+  </body> 
+</html> 
+ 
+<!-- please excuse my sloppy html --> 
